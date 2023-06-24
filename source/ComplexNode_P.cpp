@@ -119,10 +119,6 @@ void ComplexNode_P::setglobalSaturationAccumulator(float* globalSaturationAccumu
 
 
 void ComplexNode_P::forward() {
-	
-	// TODO there are no reasons not to propagate several times through MODULATION and MEMORY, for instance:
-	// MODULATION -> MEMORY -> COMPLEX -> MODULATION -> MEMORY -> OUTPUT ...
-	// And it can even be node specific. To be evolved ?
 
 #ifdef SATURATION_PENALIZING
 	constexpr float saturationExponent = 6.0f; 
@@ -227,7 +223,7 @@ void ComplexNode_P::forward() {
 		}
 	};
 
-	auto applyNonLinearities = [](float* src, float* dst, ACTIVATION* fcts, int size
+	auto applyNonLinearities = [](float* src, float* dst, int size
 #ifdef STDP
 		, float* acc_src, float* mu, float* lambda
 #endif
@@ -242,30 +238,8 @@ void ComplexNode_P::forward() {
 #endif
 		
 		for (int i = 0; i < size; i++) {
-			switch (fcts[i]) {
-			case TANH:
-				dst[i] = tanhf(src[i]);
-				break;
-			case GAUSSIAN:
-				dst[i] = 2.0f * expf(-std::clamp(powf(src[i], 2.0f), -10.0f, 10.0f)) - 1.0f; 
-				break;
-			case RELU:
-				dst[i] = std::max(src[i], 0.0f);
-				break;
-			case LOG2:
-				dst[i] = std::max(log2f(abs(src[i])), -100.0f);
-				break;
-			case EXP2:
-				dst[i] = exp2f(std::clamp(src[i], -30.0f, 30.0f));
-				break;
-			case SINE:
-				dst[i] = sinf(src[i]);
-				break;
-			case CENTERED_TANH:
-				constexpr float z = 1.0f / .375261f; // to map to [-1, 1]
-				dst[i] = tanhf(src[i]) * expf(-std::clamp(powf(src[i], 2.0f), -10.0f, 10.0f)) * z;
-				break;
-			}
+			dst[i] = tanhf(src[i]);
+		
 			if (src[i] != src[i] || dst[i] != dst[i]) {
 				__debugbreak();
 			}
@@ -286,7 +260,6 @@ void ComplexNode_P::forward() {
 		applyNonLinearities(
 			preSynActs + type->outputSize,
 			postSynActs + type->inputSize, 
-			type->toModulation.activationFunctions.get(),
 			MODULATION_VECTOR_SIZE
 #ifdef STDP
 			, accumulatedPreSynActs + type->outputSize, type->toModulation.STDP_mu.get(), type->toModulation.STDP_lambda.get()
@@ -326,7 +299,6 @@ void ComplexNode_P::forward() {
 			applyNonLinearities(
 				ptrToInputs + id,
 				complexChildren[i].postSynActs,
-				&type->toComplex.activationFunctions[id],
 				complexChildren[i].type->inputSize
 #ifdef STDP
 				, ptrToAccInputs + id, &type->toComplex.STDP_mu[id], &type->toComplex.STDP_lambda[id]
@@ -376,7 +348,6 @@ void ComplexNode_P::forward() {
 		applyNonLinearities(
 			preSynActs + type->outputSize,
 			postSynActs + type->inputSize,
-			type->toModulation.activationFunctions.get(),
 			MODULATION_VECTOR_SIZE
 #ifdef STDP
 			, accumulatedPreSynActs + type->outputSize, type->toModulation.STDP_mu.get(), type->toModulation.STDP_lambda.get()
@@ -407,7 +378,6 @@ void ComplexNode_P::forward() {
 		applyNonLinearities(
 			preSynActs,
 			preSynActs,
-			type->toOutput.activationFunctions.get(),
 			type->outputSize
 #ifdef STDP
 			, accumulatedPreSynActs, type->toOutput.STDP_mu.get(), type->toOutput.STDP_lambda.get()

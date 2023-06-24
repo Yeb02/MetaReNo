@@ -33,13 +33,13 @@
     <ClCompile Include="source\Random.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\RocketSim.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="source\Trial.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\Generator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Network.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -62,13 +62,16 @@
     <ClInclude Include="source\Random.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\RocketSim.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="source\Trial.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\Generator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Network.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\TorchNNs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

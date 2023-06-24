@@ -28,16 +28,10 @@ InternalConnexion_G::InternalConnexion_G(int nLines, int nColumns) :
 #ifdef CONTINUOUS_LEARNING
 	gamma = std::make_unique<float[]>(s);
 #endif
-
-#ifdef GUIDED_MUTATIONS
-	accumulator = std::make_unique<float[]>(s);
-#endif
-
 	
 
 	s = nLines;
 	biases = std::make_unique<float[]>(s);
-	activationFunctions = std::make_unique<ACTIVATION[]>(s);
 
 #ifdef STDP
 	STDP_mu = std::make_unique<float[]>(s);
@@ -84,16 +78,9 @@ InternalConnexion_G::InternalConnexion_G(const InternalConnexion_G& gc) {
 	std::copy(gc.gamma.get(), gc.gamma.get() + s, gamma.get());
 #endif
 
-#ifdef GUIDED_MUTATIONS
-	accumulator = std::make_unique<float[]>(s);
-	std::copy(gc.accumulator.get(), gc.accumulator.get() + s, accumulator.get());
-#endif
-
 	s = nLines;
 	biases = std::make_unique<float[]>(s);
-	activationFunctions = std::make_unique<ACTIVATION[]>(s);
 	std::copy(gc.biases.get(), gc.biases.get() + s, biases.get());
-	std::copy(gc.activationFunctions.get(), gc.activationFunctions.get() + s, activationFunctions.get());
 
 #ifdef STDP
 	STDP_mu = std::make_unique<float[]>(s);
@@ -139,16 +126,9 @@ InternalConnexion_G InternalConnexion_G::operator=(const InternalConnexion_G& gc
 	std::copy(gc.gamma.get(), gc.gamma.get() + s, gamma.get());
 #endif
 
-#ifdef GUIDED_MUTATIONS
-	accumulator = std::make_unique<float[]>(s);
-	std::copy(gc.accumulator.get(), gc.accumulator.get() + s, accumulator.get());
-#endif
-
 	s = nLines;
 	biases = std::make_unique<float[]>(s);
-	activationFunctions = std::make_unique<ACTIVATION[]>(s);
 	std::copy(gc.biases.get(), gc.biases.get() + s, biases.get());
-	std::copy(gc.activationFunctions.get(), gc.activationFunctions.get() + s, activationFunctions.get());
 
 #ifdef STDP
 	STDP_mu = std::make_unique<float[]>(s);
@@ -197,16 +177,11 @@ InternalConnexion_G::InternalConnexion_G(std::ifstream& is)
 	is.read(reinterpret_cast<char*>(gamma.get()), s * sizeof(float));
 #endif
 
-#ifdef GUIDED_MUTATIONS
-	accumulator = std::make_unique<float[]>(s);
-#endif
 
 	s = nLines;
 	biases = std::make_unique<float[]>(s);
 	is.read(reinterpret_cast<char*>(biases.get()), s * sizeof(float));
 
-	activationFunctions = std::make_unique<ACTIVATION[]>(s);
-	is.read(reinterpret_cast<char*>(activationFunctions.get()), s * sizeof(ACTIVATION));
 
 #ifdef STDP
 	STDP_mu = std::make_unique<float[]>(s);
@@ -244,8 +219,6 @@ void InternalConnexion_G::save(std::ofstream& os)
 
 	s = nLines;
 	os.write(reinterpret_cast<const char*>(biases.get()), s * sizeof(float));
-
-	os.write(reinterpret_cast<const char*>(activationFunctions.get()), s * sizeof(ACTIVATION));
 
 #ifdef STDP
 	os.write(reinterpret_cast<const char*>(STDP_mu.get()), s * sizeof(float));

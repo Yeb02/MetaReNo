@@ -3,7 +3,6 @@
 ComplexNode_G::ComplexNode_G(int inputSize, int outputSize) :
 	inputSize(inputSize), outputSize(outputSize),
 	toComplex(0, 0),
-	toMemory(0, 0),
 	toModulation(0, 0),
 	toOutput(0, 0)
 {
@@ -20,7 +19,6 @@ ComplexNode_G::ComplexNode_G(ComplexNode_G* n) {
 	outputSize = n->outputSize;
 
 	toComplex = n->toComplex;
-	toMemory = n->toMemory;
 	toModulation = n->toModulation;
 	toOutput = n->toOutput;
 
@@ -53,7 +51,6 @@ ComplexNode_G::ComplexNode_G(std::ifstream& is) {
 
 
 	toComplex = InternalConnexion_G(is);
-	toMemory = InternalConnexion_G(is);
 	toModulation = InternalConnexion_G(is);
 	toOutput = InternalConnexion_G(is);
 
@@ -69,7 +66,6 @@ void ComplexNode_G::save(std::ofstream& os) {
 
 
 	toComplex.save(os);
-	toMemory.save(os);
 	toModulation.save(os);
 	toOutput.save(os);
 }

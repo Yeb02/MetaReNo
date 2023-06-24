@@ -19,13 +19,22 @@ unsigned int fp_control_state = _controlfp(_EM_UNDERFLOW | _EM_INEXACT, _MCW_EM)
 
 
 #define LOGV(v) for (const auto e : v) {cout << std::setprecision(2)<< e << " ";}; cout << "\n"
-#define LOG(x) cout << x << endl;
 
 using namespace std;
+using namespace torch::indexing;
 
 int main()
 {
-    LOG("Seed : " << seed);
+
+    if (torch::cuda::is_available()) {
+        std::cout << "CUDA available! Training on GPU." << std::endl;
+    }
+    else {
+        std::cout << "Training on CPU." << std::endl;
+    }
+    
+
+    cout << "Seed : " << seed << endl;
 
 #ifdef ROCKET_SIM_T
     // Path to where you dumped rocket league collision meshes.
@@ -35,15 +44,11 @@ int main()
     int nSteps = 10000;
 
 
-    //vector<unique_ptr<Trial>> trials;
-    //for (int i = 0; i < nDifferentTrials; i++) {
-    //    trials.emplace_back(new RocketSimTrial());
-    //}
-   
+    CartPoleTrial t(false);
     GeneratorParameters params;
    
 
-    Generator generator;
+    Generator generator(t.netInSize, t.netOutSize);
     generator.setParameters(params);
 
 
@@ -62,9 +67,9 @@ int main()
         }
 #endif
 
-        generator.step();
+        generator.step(&t);
 
-        if ((i + 1) % 30 == 0) {
+        if ((i + 1) % 20 == 0) {
             generator.save1Net();
         }
     }

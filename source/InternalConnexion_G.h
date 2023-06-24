@@ -22,7 +22,6 @@ struct InternalConnexion_G {
 	std::unique_ptr<float[]> eta;	// in [0, 1]
 	std::unique_ptr<float[]> alpha;
 
-	std::unique_ptr<ACTIVATION[]> activationFunctions;
 	std::unique_ptr<float[]> biases;
 
 #ifndef RANDOM_W
@@ -35,16 +34,6 @@ struct InternalConnexion_G {
 
 #ifdef CONTINUOUS_LEARNING
 	std::unique_ptr<float[]> gamma; // in [0, 1]
-#endif
-
-#ifdef GUIDED_MUTATIONS
-	std::unique_ptr<float[]> accumulator;
-
-	void zeroAccumulator() {
-		for (int i = 0; i < nLines * nColumns; i++) {
-			accumulator[i] = 0.0f;
-		}
-	}
 #endif
 
 

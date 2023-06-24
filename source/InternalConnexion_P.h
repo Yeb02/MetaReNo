@@ -1,7 +1,7 @@
 #pragma once
 
 #include <memory>
-#include <InternalConnexion_G.h>
+#include "InternalConnexion_G.h"
 #include "config.h"
 
 

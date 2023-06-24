@@ -93,7 +93,7 @@ struct ComplexNode_G {
 	// The name specifies the type of node that takes the result of the matrix operations as inputs.
 	// nLines = sum(node.inputSize) for node of the type corresponding to the name
 	// nColumns = this.inputSize + MODULATION_VECTOR_SIZE + sum(complexChild.inputSize) + sum(memoryChild.inputSize)
-	InternalConnexion_G toComplex, toMemory, toModulation, toOutput;
+	InternalConnexion_G toComplex, toModulation, toOutput;
 
 	// The position in the genome vector. Must be genome.size() for the top node.
 	int position;
