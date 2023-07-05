@@ -67,7 +67,9 @@ struct Generator
 	int nNodes;
 	std::unique_ptr<Matrixator> matrixator;
 	std::unique_ptr<Specialist> matSpecialists[N_MATRICES];
-	std::unique_ptr<Specialist> arrSpecialists[N_ARRAYS];
+
+	// +1 for it not to throw incomplete type error. Will not be populated.
+	std::unique_ptr<Specialist> arrSpecialists[1+N_ARRAYS]; 
 
 
 	std::unique_ptr<torch::optim::SGD> optimizer;

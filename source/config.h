@@ -18,6 +18,10 @@
 // are multiple trials. Adds the gamma array.
 #define CONTINUOUS_LEARNING
 
+// Defined if and only if there should not be any lifelong (i.e. inter trial) learning, when CONTINUOUS_LEARNING is used.
+#ifdef CONTINUOUS_LEARNING
+#define ZERO_WL_BEFORE_TRIAL  
+#endif
 
 // When defined, for each network, float sp = sum of a function F of each activation of the network, at each step.
 // F is of the kind pow(activation, 2*k), so that its symmetric around 0 and decreasing in [-1,0]. (=> increasing in [0, -1])
@@ -27,6 +31,9 @@
 // when computing fitness. The lower sum(F), the fitter.
 #define SATURATION_PENALIZING
 
+// At each inference, a small random proportion of the lifetime quantities is reset to either 0 or a random value. These are,
+// when available; wL, H, E, w.
+#define DROPOUT
 
 #define MODULATION_VECTOR_SIZE 2     // DO NOT CHANGE
 
@@ -36,9 +43,9 @@
 // WARNING only compatible with N_ACTIVATIONS = 1, I havent implemented all the derivatives in complexNode_P::forward yet
 //#define STDP
 
-// The fixed weights w are not evolved anymore, but set randomly (uniform(-.1,.1)) at the beginning of each trial. This also means
-// that it is now InternalConnexion_P and not InternalConnexion_G that handles the w matrix. 
-//#define RANDOM_W
+// The fixed weights w and biases b are not computed by the meta-nets, but set randomly  (w -> uniform(-.1,.1), b->NORMAL).
+// This reset happens either at the beginning of each trial, or lifetime. 
+#define RANDOM_WB
 
 // Adds Oja's rule to the ABCD rule. This requires the addition of the matrices delta and storage_delta to InternalConnexion_G, 
 // deltas being in the [0, 1] range. The update of E is now :  E = (1-eta)E + eta(ABCD... - delta*yj*yj*w_eff),  where w_eff is the 
@@ -61,10 +68,12 @@
 #define STDP_ARR 0
 #endif 
 
-#ifdef RANDOM_W
-#define RW_MAT 0 
+#ifdef RANDOM_WB
+#define RWB_MAT 0 
+#define RWB_ARR 0 
 #else
-#define RW_MAT 1 // w
+#define RWB_MAT 1 // w
+#define RWB_ARR 1 // b
 #endif 
 
 #ifdef OJA
@@ -76,8 +85,7 @@
 
 // How many matrices there are per complex node.  (each of size nLines*nColumns)
 // The 6 accounts for A,B,C,D,eta,alpha
-#define N_MATRICES (6 + OJA_MAT + RW_MAT + CL_MAT)
+#define N_MATRICES (6 + OJA_MAT + RWB_MAT + CL_MAT)
 
 // How many arrays there are per complex node. (each of size nLines)
-// The 1 accounts for the bias.
-#define N_ARRAYS (1 + STDP_ARR)
+#define N_ARRAYS (RWB_ARR + STDP_ARR)

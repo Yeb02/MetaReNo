@@ -92,17 +92,16 @@ void ComplexNode_P::preTrialReset() {
 	toOutput.zero();
 
 
-#ifdef RANDOM_W
-	toComplex.randomInitW();
-	toModulation.randomInitW();
-	toOutput.randomInitW();
+#ifdef RANDOM_WB
+	toComplex.randomInitWB();
+	toModulation.randomInitWB();
+	toOutput.randomInitWB();
 #endif
 
-	// TODO commented or not ? 
-#ifdef CONTINUOUS_LEARNING
-	/*toComplex.zeroWlifetime();
+#if defined(CONTINUOUS_LEARNING) && defined(ZERO_WL_BEFORE_TRIAL)
+	toComplex.zeroWlifetime();
 	toModulation.zeroWlifetime();
-	toOutput.zeroWlifetime();*/
+	toOutput.zeroWlifetime();
 #endif 
 	
 }
@@ -126,6 +125,12 @@ void ComplexNode_P::forward() {
 
 	
 
+#ifdef DROPOUT
+	toComplex.dropout();
+	toOutput.dropout();
+	toModulation.dropout();
+#endif
+
 	// STEP 1 to 4: propagate and call children's forward.
 	// 1_Modulation -> 2_Complex -> 3_Modulation -> 4_output
 	// This could be done simultaneously for all types, but doing it this way drastically speeds up information transmission
@@ -144,16 +149,18 @@ void ComplexNode_P::forward() {
 		float* wLifetime = icp.wLifetime.get();
 		float* alpha = icp.type->alpha.get();
 
-#ifdef RANDOM_W
+#ifdef RANDOM_WB
 		float* w = icp.w.get();
+		float* b = icp.biases.get();
 #else
 		float* w = icp.type->w.get();
+		float* b = icp.type->biases.get();
 #endif
 		
 
 			
 		for (int i = 0; i < nl; i++) {
-			destinationArray[i] = icp.type->biases[i];
+			destinationArray[i] = b[i];
 			for (int j = 0; j < nc; j++) {
 				// += (H * alpha + w + wL) * prevAct
 				destinationArray[i] += (H[matID] * alpha[matID] + w[matID] + wLifetime[matID]) * postSynActs[j];
@@ -188,7 +195,7 @@ void ComplexNode_P::forward() {
 
 #ifdef OJA
 		float* delta = icp.type->delta.get();
-#ifdef RANDOM_W
+#ifdef RANDOM_WB
 		float* w = icp.w.get();
 #else
 		float* w = icp.type->w.get();
@@ -341,8 +348,8 @@ void ComplexNode_P::forward() {
 	}
 
 
-	// STEP 3: MODULATION B. if complexChildren.size() != 0 ?
-	if (true) 
+	// STEP 3: MODULATION B. 
+	if (complexChildren.size() != 0)
 	{
 		propagate(toModulation, preSynActs + type->outputSize);
 		applyNonLinearities(
@@ -367,7 +374,6 @@ void ComplexNode_P::forward() {
 		}
 #endif
 	}
-
 
 
 	// STEP 6: OUTPUT

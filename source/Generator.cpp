@@ -77,7 +77,7 @@ Generator::Generator(int netInSize, int netOutSize) :
 		i = 0;
 		in = lineEmbS[ni] * nLines[ni];
 		out = nLines[ni];
-		// in this order: biases, mu?, lambda?
+		// in this order: biases?, mu?, lambda?
 		for (int i = 0; i < N_ARRAYS; i++)
 		{
 			arrSpecialists[i] = std::make_unique<Specialist>(in, out);
@@ -103,7 +103,7 @@ void Generator::step(Trial* trial)
 	std::vector<std::vector<torch::Tensor>> NNOutputs;
 	NNOutputs.resize(nNetsPerBatch);
 
-	// Create seeds. Each seed is normalized.
+	// Create seeds. Each seed is normalized. TODO maybe it is not a good idea
 	std::unique_ptr<float[]> seeds = std::make_unique<float[]>(gaussianVecSize * nNetsPerBatch);
 	for (int i = 0; i < nNetsPerBatch; i++) {
 		float s = 0.0f;
@@ -236,7 +236,7 @@ void Generator::accumulateGrads(float* updatedSeed, std::vector<torch::Tensor>& 
 #ifdef CONTINUOUS_LEARNING
 			callForward(matSpecialists[matSpeID++].get()); // gamma
 #endif
-#ifndef RANDOM_W
+#ifndef RANDOM_WB
 			callForward(matSpecialists[matSpeID++].get()); // w
 #endif 
 #ifdef OJA
@@ -247,7 +247,7 @@ void Generator::accumulateGrads(float* updatedSeed, std::vector<torch::Tensor>& 
 
 
 		// ARRAYS :
-		{
+		if (N_ARRAYS > 0) {
 			int iFirst = nCols[_ni] * colEmbS[_ni];
 			int iLast = nCols[_ni] * colEmbS[_ni] + nLines[_ni] * lineEmbS[_ni];
 			torch::Tensor specialistInput = linesAndColsEmbeddings.index({ "...", torch::indexing::Slice(iFirst, iLast)});
@@ -262,7 +262,11 @@ void Generator::accumulateGrads(float* updatedSeed, std::vector<torch::Tensor>& 
 			};
 
 			int matSpeID = 0;
+
+#ifndef RANDOM_WB
 			callForward(arrSpecialists[matSpeID++].get()); // biases
+#endif 
+
 #ifdef STDP
 			callForward(arrSpecialists[matSpeID++].get()); // mu
 			callForward(arrSpecialists[matSpeID++].get()); // lambda
@@ -315,51 +319,65 @@ Network* Generator::createNet(float * seed, std::vector<torch::Tensor>& rawParam
 
 				auto fillLines = [&accessor, this, speID, _ni](int line0, InternalConnexion_G* co) {
 					float* mat = nullptr;
-					float a=.0f, b=.0f;
+					bool is01;
 
 					// Switch does not accomodate conditional compilation easily.
 					{
 						int i = 0;
 						if (i++ == speID) {
-							mat = co->A.get(); a = .2f; b = .0f;
+							mat = co->A.get(); is01 = false;
 						} 
 						else if (i++ == speID) {
-							mat = co->B.get(); a = .2f; b = .0f;
+							mat = co->B.get(); is01 = false;
 						}
 						else if (i++ == speID) {
-							mat = co->C.get(); a = .2f; b = .0f;
+							mat = co->C.get(); is01 = false;
 						}
 						else if (i++ == speID) {
-							mat = co->D.get(); a = .2f; b = .0f;
+							mat = co->D.get(); is01 = false;
 						}
 						else if(i++ == speID) {
-							mat = co->eta.get();  a = 0.5f; b = .5f;
+							mat = co->eta.get();  is01 = true;
 						}
 						else if (i++ == speID) {
-							mat = co->alpha.get(); a = .2f; b = .0f;
+							mat = co->alpha.get(); is01 = false;
 						}
 #ifdef CONTINUOUS_LEARNING
 						else if (i++ == speID) {
-							mat = co->gamma.get();  a = 0.5f; b = .5f;
+							mat = co->gamma.get();  is01 = true;
 						}
 #endif 
-#ifndef RANDOM_W
+
+#ifndef RANDOM_WB
 						else if (i++ == speID) {
-							mat = co->w.get(); a = .2f; b = .0f;
+							mat = co->w.get(); is01 = false;
 						}
 #endif 
+
 #ifdef OJA
 						else if (i++ == speID) {
-							mat = co->delta.get();  a = 0.5f; b = .5f;
+							mat = co->delta.get();  is01 = true;
 						}
 #endif
 					}
 
+
 					int matID = 0;
-					for (int i = line0; i < line0 + co->nLines; i++) {
-						for (int j = 0; j < nCols[_ni]; j++) {
-							mat[matID] = a * accessor[i][j] + b;
-							matID++;
+					if (is01) {
+						for (int i = line0; i < line0 + co->nLines; i++) {
+							for (int j = 0; j < nCols[_ni]; j++) {
+								float invTau = powf(2.0f, -(5.0f * accessor[i][j] + 2.0f));
+								mat[matID] = 1.0f - powf(2.0f, -invTau);
+								matID++;
+							}
+						}
+					}
+					else {
+						for (int i = line0; i < line0 + co->nLines; i++) {
+							for (int j = 0; j < nCols[_ni]; j++) {
+								mat[matID] = 2.0f * accessor[i][j];
+								matID++;
+							}
 						}
 					}
 				};
@@ -382,7 +400,7 @@ Network* Generator::createNet(float * seed, std::vector<torch::Tensor>& rawParam
 #ifdef CONTINUOUS_LEARNING
 			fillMat(matSpeID++, node); // gamma
 #endif
-#ifndef RANDOM_W
+#ifndef RANDOM_WB
 			fillMat(matSpeID++, node); // w
 #endif 
 #ifdef OJA
@@ -392,8 +410,7 @@ Network* Generator::createNet(float * seed, std::vector<torch::Tensor>& rawParam
 
 
 		// ARRAYS :
-		// VS wont let me collapse this section without the if(true).....
-		if (true) 
+		if (N_ARRAYS > 0) 
 		{ 
 			int id0 = colEmbS[_ni] * nCols[_ni];
 			torch::Tensor arrSpecialistInput = linesAndColsEmbeddings.index({ "...", torch::indexing::Slice(id0, id0 + nLines[_ni] * lineEmbS[_ni])});
@@ -408,25 +425,36 @@ Network* Generator::createNet(float * seed, std::vector<torch::Tensor>& rawParam
 
 				auto fillSubArr = [&accessor, this, speID](int i0, InternalConnexion_G* co) {
 					float* mat = nullptr;
-					float a = .0f, b = .0f;
+					bool is01 = false;
 
 					
 					int i = 0;
+
+#ifndef RANDOM_WB
 					if (i++ == speID) {
-						mat = co->biases.get(); a = 3.0f; b = .0f;
+						mat = co->biases.get(); is01 = false;
 					}
+#endif
+
 #ifdef STDP
-					else if (i++ == speID) {
-						mat = co->STDP_mu.get();  a = 0.5f; b = .5f;
+					if (i++ == speID) {
+						mat = co->STDP_mu.get();  is01 = true;
 					}
 					else if (i++ == speID) {
-						mat = co->STDP_lambda.get();  a = 0.5f; b = .5f;
+						mat = co->STDP_lambda.get();  is01 = true;
 					}
 #endif 
-					
-					for (int j = i0; j < i0 + co->nLines; j++) {
-						mat[j-i0] = a * accessor[0][j] + b;
+					if (is01) {
+						for (int j = i0; j < i0 + co->nLines; j++) {
+							float invTau = powf(2.0f, -(5.0f * accessor[0][j] + 2.0f));
+							mat[j - i0] = 1.0f - powf(2.0f, -invTau);
+						}
+					} else {
+						for (int j = i0; j < i0 + co->nLines; j++) {
+							mat[j - i0] = 3.0f * accessor[0][j];
+						}
 					}
+					
 				};
 
 				int i0 = 0;
@@ -438,7 +466,11 @@ Network* Generator::createNet(float * seed, std::vector<torch::Tensor>& rawParam
 			};
 
 			int arrSpeID = 0;
+
+#ifndef RANDOM_WB
 			fillArr(arrSpeID++, node); // biases
+#endif
+			
 #ifdef STDP
 			fillArr(arrSpeID++, node); // mu
 			fillArr(arrSpeID++, node); // lambda

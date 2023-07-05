@@ -17,7 +17,7 @@ InternalConnexion_G::InternalConnexion_G(int nLines, int nColumns) :
 	D = std::make_unique<float[]>(s);
 	alpha = std::make_unique<float[]>(s);
 
-#ifndef RANDOM_W
+#ifndef RANDOM_WB
 	w = std::make_unique<float[]>(s);
 #endif
 
@@ -31,7 +31,10 @@ InternalConnexion_G::InternalConnexion_G(int nLines, int nColumns) :
 	
 
 	s = nLines;
+#ifndef RANDOM_WB
 	biases = std::make_unique<float[]>(s);
+#endif
+	
 
 #ifdef STDP
 	STDP_mu = std::make_unique<float[]>(s);
@@ -62,7 +65,7 @@ InternalConnexion_G::InternalConnexion_G(const InternalConnexion_G& gc) {
 	std::copy(gc.D.get(), gc.D.get() + s, D.get());
 	std::copy(gc.alpha.get(), gc.alpha.get() + s, alpha.get());
 
-#ifndef RANDOM_W
+#ifndef RANDOM_WB
 	w = std::make_unique<float[]>(s);
 	std::copy(gc.w.get(), gc.w.get() + s, w.get());
 #endif
@@ -79,8 +82,11 @@ InternalConnexion_G::InternalConnexion_G(const InternalConnexion_G& gc) {
 #endif
 
 	s = nLines;
+
+#ifndef RANDOM_WB
 	biases = std::make_unique<float[]>(s);
 	std::copy(gc.biases.get(), gc.biases.get() + s, biases.get());
+#endif
 
 #ifdef STDP
 	STDP_mu = std::make_unique<float[]>(s);
@@ -111,7 +117,7 @@ InternalConnexion_G InternalConnexion_G::operator=(const InternalConnexion_G& gc
 	std::copy(gc.D.get(), gc.D.get() + s, D.get());
 	std::copy(gc.alpha.get(), gc.alpha.get() + s, alpha.get());
 
-#ifndef RANDOM_W
+#ifndef RANDOM_WB
 	w = std::make_unique<float[]>(s);
 	std::copy(gc.w.get(), gc.w.get() + s, w.get());
 #endif
@@ -127,8 +133,11 @@ InternalConnexion_G InternalConnexion_G::operator=(const InternalConnexion_G& gc
 #endif
 
 	s = nLines;
+
+#ifndef RANDOM_WB
 	biases = std::make_unique<float[]>(s);
 	std::copy(gc.biases.get(), gc.biases.get() + s, biases.get());
+#endif
 
 #ifdef STDP
 	STDP_mu = std::make_unique<float[]>(s);
@@ -161,7 +170,7 @@ InternalConnexion_G::InternalConnexion_G(std::ifstream& is)
 	alpha = std::make_unique<float[]>(s);
 	is.read(reinterpret_cast<char*>(alpha.get()), s * sizeof(float));
 
-#ifndef RANDOM_W
+#ifndef RANDOM_WB
 	w = std::make_unique<float[]>(s);
 	is.read(reinterpret_cast<char*>(w.get()), s * sizeof(float));
 #endif
@@ -179,8 +188,11 @@ InternalConnexion_G::InternalConnexion_G(std::ifstream& is)
 
 
 	s = nLines;
+	
+#ifndef RANDOM_WB
 	biases = std::make_unique<float[]>(s);
 	is.read(reinterpret_cast<char*>(biases.get()), s * sizeof(float));
+#endif
 
 
 #ifdef STDP
@@ -205,7 +217,7 @@ void InternalConnexion_G::save(std::ofstream& os)
 	os.write(reinterpret_cast<const char*>(D.get()), s * sizeof(float));
 	os.write(reinterpret_cast<const char*>(alpha.get()), s * sizeof(float));
 	
-#ifndef RANDOM_W
+#ifndef RANDOM_WB
 	os.write(reinterpret_cast<char*>(w.get()), s * sizeof(float));
 #endif
 
@@ -218,7 +230,10 @@ void InternalConnexion_G::save(std::ofstream& os)
 #endif
 
 	s = nLines;
+
+#ifndef RANDOM_WB
 	os.write(reinterpret_cast<const char*>(biases.get()), s * sizeof(float));
+#endif
 
 #ifdef STDP
 	os.write(reinterpret_cast<const char*>(STDP_mu.get()), s * sizeof(float));
